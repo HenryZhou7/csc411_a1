@@ -4,6 +4,8 @@ from scipy.misc import imread
 from scipy.misc import imsave
 from scipy.misc import imresize
 
+from matplotlib.pyplot import *
+
 
 ####################part 5####################
 
@@ -218,7 +220,7 @@ carell_m, carell_n = asmatrix(carell_train).shape
 #######apply linear classification algorithm###################
 
 #Needed function for linear classifier
-random.seed(0)
+random.seed(1)
 
 #output the prediction
 #take in data and parameter
@@ -256,10 +258,10 @@ def computeGradient(X, theta, Y):
 #the output of the function should give a trained model: a vector of parameters
 def gradientDescent(computePrediction, computeCost, computeGradient, X, theta, Y, max_iter):
     print "Starting Gradient Descent..."
-    learning_rate = 0.0000001
-    EPS = 1e-6
+    learning_rate = 1e-7
+    EPS = 1e-7
     
-    prev_theta = theta - 2 * EPS
+    prev_theta = theta - 10 * EPS
     gradient_val = computeGradient(X, theta, Y)
     theta = theta - learning_rate * asmatrix(gradient_val).T
     
@@ -483,31 +485,107 @@ vartan_m, vartan_n = asmatrix(vartan_train).shape
 
 
 ###################data preprocessing for training the model###################
-examplesperperson = range(0, 48)
-for i in range(0, 48):
-	examplesperperson[i] = 2 * examplesperperson[i] + 1
+size = range(0, 50)
+for i in range(0, 50):
+	size[i] = 2 * size[i] + 1
 
 #construct the validation set and test set
 dummy_ones = ones((60, 1))
-validation_data = vstack((bracco_validation, gilpin_validation))
-validation_data = vstack((validation_data, harmon_validation))
-validation_data = vstack((validation_data, radcliffe_validation))
-validation_data = vstack((validation_data, butler_validation))
-validation_data = vstack((validation_data, vartan_validation))
+validation_data = vstack((drescher_validation, ferrera_validation))
+validation_data = vstack((validation_data, chenoweth_validation))
+validation_data = vstack((validation_data, baldwin_validation))
+validation_data = vstack((validation_data, hader_validation))
+validation_data = vstack((validation_data, carell_validation))
 validation_data = hstack((validation_data, dummy_ones))
 
-test_data = vstack((bracco_test, gilpin_test))
-test_data = vstack((test_data, harmon_test))
-test_data = vstack((test_data, radcliffe_test))
-test_data = vstack((test_data, butler_test))
-test_data = vstack((test_data, vartan_test))
+dummy_ones = ones((bracco_m + gilpin_m + harmon_m + radcliffe_m + butler_m + vartan_m , 1))
+test_data = vstack((bracco_train, gilpin_train))
+test_data = vstack((test_data, harmon_train))
+test_data = vstack((test_data, radcliffe_train))
+test_data = vstack((test_data, butler_train))
+test_data = vstack((test_data, vartan_train))
 test_data = hstack((test_data, dummy_ones))
+
+dummy_ones = ones((bracco_m + gilpin_m + harmon_m, 1))
+dummy_zero = zeros((radcliffe_m + butler_m + vartan_m, 1))
+test_target = vstack((dummy_ones, dummy_zero))
+
 
 dummy_ones = ones((30, 1))
 dummy_zero = zeros((30, 1))
 vali_target = vstack((dummy_ones, dummy_zero))
-test_target = vstack((dummy_ones, dummy_zero))
+#test_target = vstack((dummy_ones, dummy_zero))
 
+training_cost = []
+validation_cost = []
+test_cost = []
+test_performance = []
+
+#set up the training data with different sizes
+
+
+
+for i in range(0, 50):
+	print "========== Training model with training set of size ==========", size[i] * 6
+	dummy_ones = ones((6 * size[i], 1))
+	train_data = vstack((drescher_train[:size[i]][:], ferrera_train[:size[i]][:]))
+	train_data = vstack((train_data, chenoweth_train[:size[i]][:]))
+	train_data = vstack((train_data, baldwin_train[:size[i]][:]))
+	train_data = vstack((train_data, hader_train[:size[i]][:]))
+	train_data = vstack((train_data, carell_train[:size[i]][:]))
+	train_data = hstack((train_data, dummy_ones))
+
+	dummy_ones = ones((3 * size[i], 1))
+	dummy_zero = zeros((3 * size[i], 1))
+	target = vstack((dummy_ones, dummy_zero))
+
+	max_iter = 3000
+	theta = random.rand(1025, 1) / 1e5
+
+	model = gradientDescent(computePrediction, computeCost, computeGradient, train_data, theta, target, max_iter)
+	t_cost = computeCost(train_data, theta, target)
+	v_cost = computeCost(validation_data, model, vali_target)
+	te_cost = computeCost(test_data, model, test_target)
+	training_cost.append(t_cost)
+	validation_cost.append(v_cost)
+	test_cost.append(te_cost)
+
+	female_correct = sum(computePrediction(test_data, model)[0:100 + 97 + 100] >=0.5)
+	male_correct   =sum(computePrediction(test_data, model)[100 + 97 + 100 + 1:] < 0.5)
+
+	test_performance.append((female_correct + male_correct) / 597.)
+	print "==========Training for", train_data.shape, "train set is finished.=========="
+
+
+
+size = asarray(size)
+training_cost = asarray(training_cost)
+validation_cost = asarray(validation_cost)
+test_cost = asarray(test_cost)
+test_performance = asarray(test_performance)
+
+
+fig = figure()
+
+plot(size, training_cost, label = "Train")
+plot(size, validation_cost, label = "Validation")
+#plot(size, test_cost, label = "Test")
+xlabel("Images per person in training set")
+ylabel("Loss on Train/Validation Data")
+legend(loc = 'center right', framealpha = 0.5)
+title("Loss on Training and Validation Set")
+show()
+
+plot(size, test_performance, label = "Performance on testing set")
+xlabel("Images per person in training set")
+ylabel("Performance")
+legend(loc = 'lower right', framealpha = 0.5)
+title("Performance on Different Test Set")
+show()
+
+
+
+"""
 #set up the training data. 
 size = 100
 dummy_ones = ones((6 * size, 1))
@@ -524,8 +602,8 @@ dummy_zero = zeros((300, 1))
 target = vstack((dummy_ones, dummy_zero))
 
 ######################apply training algorithm######################
-max_iter = 2000
-theta = random.rand(1025, 1) / 100000.0
+max_iter = 5000
+theta = random.rand(1025, 1) / 1e5
 
 print "##################training starts###########################"
 model = gradientDescent(computePrediction, computeCost, computeGradient, train_data, theta, target, max_iter)
@@ -535,20 +613,18 @@ print "##################validati result###########################"
 print "Validati data cost", computeCost(validation_data, model, vali_target)
 female_correct = sum(computePrediction(validation_data, model)[0:30] >=0.5)
 male_correct   =sum(computePrediction(validation_data, model)[31:60] < 0.5)
-print "Female prediction correct", female_correct
-print "Male prediction correct  ", male_correct
+print "Female prediction correct(out of 30)", female_correct
+print "Male prediction correct  (out of 30)", male_correct
 print "Total performance (correct prediction rate): ", (female_correct + male_correct) / 60.
 
 print "##################testing result ###########################"
-print "Test data cost", computeCost(test_data, model, vali_target)
-female_correct = sum(computePrediction(test_data, model)[0:30] >=0.5)
-male_correct   =sum(computePrediction(test_data, model)[31:60] < 0.5)
-print "Female prediction correct", female_correct
-print "Male prediction correct  ", male_correct
-print "Total performance (correct prediction rate): ", (female_correct + male_correct) / 60.
+female_correct = sum(computePrediction(test_data, model)[0:100 + 97 + 100] >=0.5)
+male_correct   =sum(computePrediction(test_data, model)[100 + 97 + 100 + 1:] < 0.5)
+print "Female prediction correct (out of 30)", female_correct
+print "Male prediction correct   (out of 30)", male_correct
+print "Total performance (correct prediction rate): ", (female_correct + male_correct) / 597.
 
-
-
+"""
 
 
 

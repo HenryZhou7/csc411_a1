@@ -43,7 +43,7 @@ hader_validation = np.array(h_validation)
 hader_test = np.array(h_test)
 hader_m, hader_n = hader_train.shape
 
-
+print hader_train.shape
 
 #######################load the data for Carell(actor)#######################
 c_train = []
@@ -123,8 +123,8 @@ def computeGradient(X, theta, Y):
 #the output of the function should give a trained model: a vector of parameters
 def gradientDescent(computePrediction, computeCost, computeGradient, X, theta, Y, max_iter):
     print "Starting Gradient Descent..."
-    learning_rate = 0.0000001
-    EPS = 1e-6
+    learning_rate = 1e-7
+    EPS = 1e-7
     
     prev_theta = theta - 2 * EPS
     gradient_val = computeGradient(X, theta, Y)
@@ -157,7 +157,7 @@ target = np.vstack((dummy_ones, dummy_zero))
 
 #set up the theta parameter
 assert(hader_n == carell_n), "Two sets of data's features do not align"
-theta = np.random.rand(hader_n + 1, 1) / 100000.0
+theta = np.random.rand(hader_n + 1, 1) / 1e5
 
 #########apply the learning algorithm#########
 model = gradientDescent(computePrediction, computeCost, computeGradient, train_data, theta, target, max_iter)
@@ -185,12 +185,16 @@ print "Test data Result:"
 print "Hader Correct ", sum(computePrediction(test_data, model)[0:10] >=0.5)
 print "Carell Correct", sum(computePrediction(test_data, model)[11:20] < 0.5)
 
+##########################################################################################
+########################################### Part 4 #######################################
+##########################################################################################
+
 theta = np.random.rand(1024, 1) / 100000.0
 dummy_ones = np.ones((2, 1))
 dummy_zero = np.zeros((2, 1))
 target = np.vstack((dummy_ones, dummy_zero))
 twoimage_data = hader_train[4:6][:]
-twoimage_data = np.vstack((twoimage_data, carell_train[:2][:]))
+twoimage_data = np.vstack((twoimage_data, carell_train[9:11][:]))
 twoimage_model = gradientDescent(computePrediction, computeCost, computeGradient, twoimage_data, theta, target, max_iter)
 twoimage_model = np.reshape(twoimage_model, (32, 32))
 
@@ -204,10 +208,10 @@ model = np.reshape(model, (32, 32))
 
 fig = figure()
 a = fig.add_subplot(1,2,1)
-imgplot = imshow(model)
+imgplot = imshow(model, cmap=get_cmap('gray'))
 a.set_title("Trained full model")
 a = fig.add_subplot(1,2,2)
-imgplot = imshow(twoimage_model)
+imgplot = imshow(twoimage_model, cmap=get_cmap('gray'))
 a.set_title("2 images from each person")
 show()
 
